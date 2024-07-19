@@ -10,7 +10,7 @@
 
 #include <List.hpp>
 
-#define BCADDR 0xFF // Broadcast address
+#define BCADDR 0xFF  // Broadcast address
 
 // Definition of a packet in the QMAC protocol
 typedef struct QMACPacket {
@@ -61,13 +61,16 @@ class QMACClass {
                                          // and add it to the send queue
     void run();                          // Main procedure of the protocol
     int amountAvailable();               // Length of the reception queue
-    bool receive(Packet *p);  // Puts all information of the received data in
-                              // the given pointer to a packet
+    bool receive(Packet *p,
+                 int packetSize);  // Puts all information of the received data
+                                   // in the given pointer to a packet
     static void timerCallback(
         void *arg);  // Procedure called when
                      // the activity timer is over : resets the timer, set it to
                      // the next active/sleeping period depending on the current
                      // activity status, then switches activity status
+    static void receiveCallback(int packetSize);
+    static void cadCallback(boolean signal);
     uint16_t nextActiveTime();    // Returns the remaining time before
                                   // the next activity period
     List<Packet> receptionQueue;  // List of received packets, for upper layers
@@ -75,6 +78,11 @@ class QMACClass {
     bool active = true;           // True if node is active, false if sleeping
     byte localAddress;            // MAC address of this node
     static constexpr double PACKET_UNACKED_THRESHOLD = 0.3;
+    List<Packet>
+        unackedQueue;  // List of packets that have been sent
+                       // by this node but not ACKed by the receiver yet
+    byte msgCount;     // Number of messages sent including this one
+    boolean signalDetected;
 
    private:
     void synchronize();  // Sends current next active time to the other nodes,
@@ -85,17 +93,11 @@ class QMACClass {
         uint64_t timeUntilActive);  // Resets the
                                     // activity switching timer, then set it to
                                     // the given next active time
-    bool sendAck(Packet p);  // Sends an ACK as answer of the given packet
-    bool sendSyncPacket(byte destination);  // Sends a sync packet
-    bool sendPacket(Packet p);              // Sends the given packet
-    int64_t sleepingDuration;               // Duration of the sleeping period
-    int64_t activeDuration;                 // Duration of the active period
-    byte msgCount;  // Number of messages sent including this one
+    bool sendPacket(Packet p);      // Sends the given packet
+    int64_t sleepingDuration;       // Duration of the sleeping period
+    int64_t activeDuration;         // Duration of the active period
     // int64_t lastTimeActive; // LEGACY
     // int64_t startCounter = millis(); // LEGACY
     esp_timer_handle_t timer_handle;  // Handler of the activity switching timer
-    List<Packet>
-        unackedQueue;  // List of packets that have been sent
-                       // by this node but not ACKed by the receiver yet
 };
 extern QMACClass QMAC;

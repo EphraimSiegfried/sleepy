@@ -20,7 +20,7 @@
 #define GPS_RX_PIN 34
 #define GPS_TX_PIN 12
 
-#define ADDR 0x02
+#define ADDR     0x02
 #define SENDADDR 0x01
 
 TinyGPSPlus gps;
@@ -47,14 +47,14 @@ void setup() {
     delay(1500);
 
     // QMAC.begin(10000, 5000);
-    QMAC.begin(10000, 5000, ADDR);
+    QMAC.begin(10000, 10000);
     LOG("Setup done");
 }
 
 void loop() {
     if (Serial.available()) {
         String msg = Serial.readStringUntil('\n');
-        QMAC.push(msg, SENDADDR);
+        QMAC.push(msg, 0xff);
     }
 
     bool currentState = QMAC.active;
