@@ -66,6 +66,9 @@ void QMACClass::run() {
                 unackedQueue.add(nextPacket);
             }
             idx++;
+            // Enforcing the 1% LoRa rule, which is still a bit blurry:
+            LoRa.sleep(); // Let's put them in sleep mode since they can't do anything anyway
+            delay((sendEnd - sendStart) * 99);
         }
 
         Packet p = {};
