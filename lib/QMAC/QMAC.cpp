@@ -57,13 +57,18 @@ void QMACClass::run() {
         if (!sendQueue.isEmpty() &&
             millis() >= activeSlots[idx] * slotTime + startTime) {
             Packet nextPacket = sendQueue[0];
+            uint8_t sendStart = millis();
             sendPacket(nextPacket);
+            uint8_t sendEnd = millis();
             sendQueue.removeFirst();
             // Nobody ACKs a broadcast message, so we shouldn't expect an answer:
             if (nextPacket.destination != BCADDR) {
                 unackedQueue.add(nextPacket);
             }
             idx++;
+            // Enforcing the 1% LoRa rule, which is still a bit blurry:
+            LoRa.sleep(); // Let's put them in sleep mode since they can't do anything anyway
+            delay((sendEnd - sendStart) * 99);
         }
 
         Packet p = {};
