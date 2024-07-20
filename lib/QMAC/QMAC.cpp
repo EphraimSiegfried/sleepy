@@ -51,15 +51,17 @@ void QMACClass::run() {
     int64_t startTime = millis();
     size_t idx = 0;
     unackedQueue.clear();
+    uint64_t timeOnAir = 0;
     // Again, should only run when active:
     while (this->active) {
         // For each packet, we send it only when it's its turn:
         if (!sendQueue.isEmpty() &&
             millis() >= activeSlots[idx] * slotTime + startTime) {
             Packet nextPacket = sendQueue[0];
-            uint8_t sendStart = millis();
+            uint64_t activeStart = millis();
             sendPacket(nextPacket);
-            uint8_t sendEnd = millis();
+            uint64_t activeEnd = millis();
+            timeOnAir += activeEnd - activeStart
             sendQueue.removeFirst();
             // Nobody ACKs a broadcast message, so we shouldn't expect an answer:
             if (nextPacket.destination != BCADDR) {
@@ -107,13 +109,10 @@ void QMACClass::run() {
                 sendAck(p);
             }
         }
-        // Enforcing the 1% duty cycling LoRa rule, and sleeping to save energy:
-        LoRa.sleep();
-        delay((sendEnd - sendStart) * 99);
     }
-
     // Go to sleep when active time is over
     LoRa.sleep();
+
     // synchronize if a percentage of packets didn't arrive
     double unackedRatio = (double)unackedQueue.getSize() / numPacketsReady;
     if (numPacketsReady > 0) {
@@ -130,6 +129,12 @@ void QMACClass::run() {
     sendQueue.addAll(unackedQueue);
 
     this->periodsSinceSync++;
+
+    // Enforcing the 1% duty cycling LoRa rule:
+    LOG(activeStart);
+    LOG(activeEnd);
+    LOG(timeOnAir);
+    delay(timeOnAir * 99);
 
     return;
 }
